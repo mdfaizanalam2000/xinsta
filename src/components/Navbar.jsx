@@ -3,7 +3,7 @@ import React from 'react'
 const Navbar = () => {
     return (
         <nav>
-            <span>InstaTool</span>
+            <span>XInsta</span>
         </nav>
     )
 }

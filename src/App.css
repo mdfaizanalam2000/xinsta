@@ -1,9 +1,20 @@
 nav {
   background-color: black;
   color: white;
-  padding: 1% 0.5%;
+  padding: 1% 2%;
 }
 
 body {
-  background-color: antiquewhite;
+  background-color: wheat;
+}
+
+footer {
+  background-color: black;
+  color: white;
+  padding: 1% 0;
+  text-align: center;
+}
+
+.text-muted {
+  font-size: small;
 }
