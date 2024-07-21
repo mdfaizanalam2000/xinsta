@@ -21,17 +21,12 @@ const Header = (props) => {
         const zip = new JSZip();
         const contents = await zip.loadAsync(file);
 
-        if (!contents.file("connections/followers_and_following/followers_1.json") || !contents.file("connections/followers_and_following/following.json") || !contents.file("connections/followers_and_following/pending_follow_requests.json")) {
-            alert("Invalid zip file provided, Kindly retry!");
-            return;
-        }
-
         let read = contents.file("connections/followers_and_following/followers_1.json");
-        const followers = JSON.parse(await read.async('text'));
+        const followers = read === null ? [] : JSON.parse(await read.async('text'));
         read = contents.file("connections/followers_and_following/following.json");
-        const followings = JSON.parse(await read.async('text')).relationships_following;
+        const followings = read === null ? [] : JSON.parse(await read.async('text')).relationships_following;
         read = contents.file("connections/followers_and_following/pending_follow_requests.json");
-        const pending_follow_requests = JSON.parse(await read.async('text')).relationships_follow_requests_sent;
+        const pending_follow_requests = read === null ? [] : JSON.parse(await read.async('text')).relationships_follow_requests_sent;
 
         if (action === "unfollowers") {
             props.setCardMessage("You followed them on: ");
@@ -46,6 +41,7 @@ const Header = (props) => {
     const handleScanPendingRequests = (pending_follow_requests) => {
         if (pending_follow_requests.length === 0) {
             props.setMessage("No pending follow request found!");
+            props.setData([]);
             return;
         }
         props.setMessage(`Found ${pending_follow_requests.length} pending sent request(s).`);
@@ -66,6 +62,7 @@ const Header = (props) => {
 
         if (unfollowers.length === 0) {
             props.setMessage("No unfollower found!");
+            props.setData([]);
             return;
         }
 
