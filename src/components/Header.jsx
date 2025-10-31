@@ -25,12 +25,16 @@ const Header = (props) => {
         const followers = read === null ? [] : JSON.parse(await read.async('text'));
         read = contents.file("connections/followers_and_following/following.json");
         const followings = read === null ? [] : JSON.parse(await read.async('text')).relationships_following;
-        read = contents.file("connections/followers_and_following/pending_follow_requests.json");
-        const pending_follow_requests = read === null ? [] : JSON.parse(await read.async('text')).relationships_follow_requests_sent;
+        read = contents.file("connections/followers_and_following/recent_follow_requests.json");
+        const pending_follow_requests = read === null ? [] : JSON.parse(await read.async('text')).relationships_permanent_follow_requests;
 
         if (action === "unfollowers") {
             props.setCardMessage("You followed them on: ");
             handleScanUnfollowers(followers, followings);
+        }
+        if (action === "ghost_followers") {
+            props.setCardMessage("They followed you on: ");
+            handleScanGhostFollowers(followers, followings);
         }
         if (action === "pending_requests") {
             props.setCardMessage("You sent follow request on: ");
@@ -40,11 +44,11 @@ const Header = (props) => {
 
     const handleScanPendingRequests = (pending_follow_requests) => {
         if (pending_follow_requests.length === 0) {
-            props.setMessage("No pending follow request found!");
+            props.setMessage("No recent follow request found!");
             props.setData([]);
             return;
         }
-        props.setMessage(`Found ${pending_follow_requests.length} pending sent request(s).`);
+        props.setMessage(`Found ${pending_follow_requests.length} recently sent follow request(s).`);
         props.setData(pending_follow_requests);
     }
 
@@ -53,7 +57,7 @@ const Header = (props) => {
             return follower.string_list_data[0].value
         })
         const followings_ids = followings.map((following) => {
-            return following.string_list_data[0].value
+            return following.title
         })
 
         const unfollowers = followings_ids.filter((user) => {
@@ -69,13 +73,43 @@ const Header = (props) => {
         let unfollowers_data = [];
         for (const index in unfollowers) {
             const user = followings.filter((user) => {
-                return unfollowers[index] === user.string_list_data[0].value;
+                return unfollowers[index] === user.title;
             })
             unfollowers_data.push(user[0]);
         }
 
-        props.setMessage(`Found ${unfollowers.length} unfollower(s).`);
+        props.setMessage(`Found ${unfollowers.length} unfollower(s). This also includes deactivated accounts(if any)`);
         props.setData(unfollowers_data);
+    }
+
+    const handleScanGhostFollowers = (followers, followings) => {
+        const followers_ids = followers.map((follower) => {
+            return follower.string_list_data[0].value
+        })
+        const followings_ids = followings.map((following) => {
+            return following.title
+        })
+
+        const ghost_followers = followers_ids.filter((user) => {
+            return !followings_ids.includes(user);
+        })
+
+        if (ghost_followers.length === 0) {
+            props.setMessage("You follow back everyone!");
+            props.setData([]);
+            return;
+        }
+
+        let ghost_followers_data = [];
+        for (const index in ghost_followers) {
+            const user = followers.filter((user) => {
+                return ghost_followers[index] === user.string_list_data[0].value;
+            })
+            ghost_followers_data.push(user[0]);
+        }
+
+        props.setMessage(`Found ${ghost_followers.length} follower(s) you don't follow back.`);
+        props.setData(ghost_followers_data);
     }
 
     return (
@@ -101,7 +135,8 @@ const Header = (props) => {
             <br />
             <select name="actions" id="actions" onChange={(e) => setAction(e.target.value)}>
                 <option value="unfollowers">Find unfollowers</option>
-                <option value="pending_requests">Find pending sent requests</option>
+                <option value="ghost_followers">Find followers you don't follow back</option>
+                <option value="pending_requests">Find recently sent follow requests</option>
             </select>
             <button className={fileUploaded ? "btn btn-success my-3 ms-2" : "btn btn-secondary my-3 ms-2 disabled"} type="submit" onClick={handleScan}>Scan now</button>
         </>
