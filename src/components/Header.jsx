@@ -26,7 +26,11 @@ const Header = (props) => {
         read = contents.file("connections/followers_and_following/following.json");
         const followings = read === null ? [] : JSON.parse(await read.async('text')).relationships_following;
         read = contents.file("connections/followers_and_following/recent_follow_requests.json");
-        const pending_follow_requests = read === null ? [] : JSON.parse(await read.async('text')).relationships_permanent_follow_requests;
+        const recent_follow_requests = read === null ? [] : JSON.parse(await read.async('text'))
+        read = contents.file("connections/followers_and_following/pending_follow_requests.json");
+        const pending_follow_requests = read === null ? [] : JSON.parse(await read.async('text'))
+        read = contents.file("connections/followers_and_following/recently_unfollowed_profiles.json");
+        const recently_unfollowed_profiles = read === null ? [] : JSON.parse(await read.async('text'))
 
         if (action === "unfollowers") {
             props.setCardMessage("You followed them on: ");
@@ -40,16 +44,62 @@ const Header = (props) => {
             props.setCardMessage("You sent follow request on: ");
             handleScanPendingRequests(pending_follow_requests);
         }
+        if (action === "recent_requests") {
+            props.setCardMessage("You sent follow request on: ");
+            handleScanRecentRequests(recent_follow_requests);
+        }
+        if (action === "recently_unfollowed") {
+            props.setCardMessage("You unfollowed them on: ");
+            handleScanUnfollowedAccounts(recently_unfollowed_profiles);
+        }
     }
 
     const handleScanPendingRequests = (pending_follow_requests) => {
         if (pending_follow_requests.length === 0) {
-            props.setMessage("No recent follow request found!");
+            props.setMessage("No pending follow request found!");
             props.setData([]);
             return;
         }
-        props.setMessage(`Found ${pending_follow_requests.length} recently sent follow request(s).`);
-        props.setData(pending_follow_requests);
+        props.setMessage(`Found ${pending_follow_requests.length} pending follow request(s).`);
+
+        let accounts = []
+        for (let i = 0; i < pending_follow_requests.length; i++) {
+            let username = pending_follow_requests[i].label_values[2].value
+            accounts.push({ "title": username, "string_list_data": [{ "href": `https://www.instagram.com/${username}`, "timestamp": pending_follow_requests[i].timestamp }] })
+        }
+        props.setData(accounts);
+    }
+
+    const handleScanRecentRequests = (recent_follow_requests) => {
+        if (recent_follow_requests.length === 0) {
+            props.setMessage("No recently sent follow request found!");
+            props.setData([]);
+            return;
+        }
+        props.setMessage(`Found ${recent_follow_requests.length} recently sent follow request(s).`);
+
+        let accounts = []
+        for (let i = 0; i < recent_follow_requests.length; i++) {
+            let username = recent_follow_requests[i].label_values[2].value
+            accounts.push({ "title": username, "string_list_data": [{ "href": `https://www.instagram.com/${username}`, "timestamp": recent_follow_requests[i].timestamp }] })
+        }
+        props.setData(accounts);
+    }
+
+    const handleScanUnfollowedAccounts = (recently_unfollowed_profiles) => {
+        if (recently_unfollowed_profiles.length === 0) {
+            props.setMessage("No recently unfollowed profiles found!");
+            props.setData([]);
+            return;
+        }
+        props.setMessage(`Found ${recently_unfollowed_profiles.length} recently unfollowed profile(s).`);
+
+        let accounts = []
+        for (let i = 0; i < recently_unfollowed_profiles.length; i++) {
+            let username = recently_unfollowed_profiles[i].label_values[2].value
+            accounts.push({ "title": username, "string_list_data": [{ "href": `https://www.instagram.com/${username}`, "timestamp": recently_unfollowed_profiles[i].timestamp }] })
+        }
+        props.setData(accounts);
     }
 
     const handleScanUnfollowers = (followers, followings) => {
@@ -123,20 +173,21 @@ const Header = (props) => {
             <hr />
             <h5 className='text-center my-2'>How to get zip file?</h5>
             <p>Step 1: Open instagram app and go to your profile -&gt; Settings</p>
-            <p>Step 2: Go to "Your activity" -&gt; "Download Your Information"</p>
-            <p>Step 3: Go to "Download or transfer information" -&gt; "Some of your information"</p>
-            <p>Step 4: Select "Followers and following" under "Connections" -&gt; "Next"</p>
-            <p>Step 5: Select "Download to device" -&gt; "Next"</p>
-            <p>Step 6: Set "Date range" to "All time" and "Format" to "JSON"</p>
-            <p>Step 7: Keep others as default and click "Create files"</p>
-            <p>Step 8: Your files will be ready to download in 2-3 minutes. Verify your password to download and then upload that file here.</p>
+            <p>Step 2: Go to "Accounts Centre" -&gt; "Your information and permissions" -&gt; "Export your information"</p>
+            <p>Step 3: Select "Create export" -&gt; "Export to device"</p>
+            <p>Step 4: Select "Customise information" -&gt; choose "Followers and following" under "Connections" -&gt; "Save"</p>
+            <p>Step 5: Set "Date range" to "All time" and "Format" to "JSON"</p>
+            <p>Step 6: Keep others as default and click "Start export" -&gt; Verify with password if prompted</p>
+            <p>Step 7: Your files will be ready to download in about 5 minutes. Verify your password again if prompted to download and then upload that file here.</p>
             <hr />
             <input type="file" accept='.zip' onChange={handleUploadFile} />
             <br />
             <select name="actions" id="actions" onChange={(e) => setAction(e.target.value)}>
                 <option value="unfollowers">Find unfollowers</option>
                 <option value="ghost_followers">Find followers you don't follow back</option>
-                <option value="pending_requests">Find recently sent follow requests</option>
+                <option value="pending_requests">Find pending follow requests</option>
+                <option value="recent_requests">Find recently sent follow requests</option>
+                <option value="recently_unfollowed">Find recently unfollowed accounts</option>
             </select>
             <button className={fileUploaded ? "btn btn-success my-3 ms-2" : "btn btn-secondary my-3 ms-2 disabled"} type="submit" onClick={handleScan}>Scan now</button>
         </>
